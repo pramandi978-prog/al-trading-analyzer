@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <head>
 <title>AI Trading Analyzer</title>
 <script src="script.js"></script>
@@ -19,7 +19,11 @@
 
 <br><br>
 
-<button onclick="analyze()">Analyze Market</button>
+<button onclick="analyzeMarket()" class="btn btn-success">
+Analyze Market
+</button>
+
+<h2 id="result"></h2>
 
 <div id="result" style="margin-top:30px;font-size:20px"></div>
 
