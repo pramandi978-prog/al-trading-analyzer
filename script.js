@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const proxy = "https://api.allorigins.win/raw?url=";
+const proxy = "https://corsproxy.io/?";
 
 const pairSelect = document.getElementById("pair");
 const searchInput = document.getElementById("search");
@@ -11,7 +11,9 @@ let allPairs = [];
 // ===== LOAD PAIRS =====
 async function loadPairs() {
   try {
-    const res = await fetch(proxy + encodeURIComponent("https://api.binance.com/api/v3/exchangeInfo"));
+    loading.innerText = "Loading pairs...";
+
+    const res = await fetch(proxy + "https://api.binance.com/api/v3/exchangeInfo");
     const data = await res.json();
 
     allPairs = data.symbols
@@ -19,6 +21,7 @@ async function loadPairs() {
       .map(s => s.symbol);
 
     renderPairs(allPairs);
+    loading.innerText = "";
 
   } catch (err) {
     console.error(err);
@@ -30,14 +33,14 @@ function renderPairs(pairs) {
   pairSelect.innerHTML = pairs.map(p => `<option>${p}</option>`).join("");
 }
 
-// ===== SEARCH FILTER =====
+// ===== SEARCH =====
 searchInput.addEventListener("input", () => {
   const value = searchInput.value.toLowerCase();
   const filtered = allPairs.filter(p => p.toLowerCase().includes(value));
   renderPairs(filtered);
 });
 
-// ===== ANALYZE FUNCTION =====
+// ===== ANALYZE =====
 async function analyze() {
   try {
     const pair = pairSelect.value;
@@ -47,13 +50,13 @@ async function analyze() {
     resultDiv.innerHTML = "";
 
     const res = await fetch(
-      proxy + encodeURIComponent(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=5m&limit=100`)
+      proxy + `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=5m&limit=100`
     );
 
     const data = await res.json();
 
     if (!data || data.length === 0) {
-      loading.innerText = "No data found!";
+      loading.innerText = "No data!";
       return;
     }
 
