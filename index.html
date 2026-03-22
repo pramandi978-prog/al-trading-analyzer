@@ -1,29 +1,35 @@
 <!DOCTYPE html>
-<html>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<html lang="en">
 <head>
-<title>AI Trading Analyzer</title>
-<script src="script.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Analyzer</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:Arial">
+<body style="background:black; color:white; text-align:center; font-family:Arial;">
 
-<h1>AI Forex & Crypto Analyzer</h1>
+    <h1 class="mt-4">AI Forex & Crypto Analyzer</h1>
 
-<select id="pair">
-<option>BTCUSDT</option>
-<option>ETHUSDT</option>
-<option>EURUSD</option>
-<option>GBPUSD</option>
-</select>
+    <div class="mt-4">
+        <select id="pair" class="form-select w-25 mx-auto">
+            <option>BTCUSDT</option>
+            <option>ETHUSDT</option>
+            <option>EURUSD</option>
+            <option>GBPUSD</option>
+        </select>
+    </div>
 
-<br><br>
+    <div class="mt-4">
+        <button class="btn btn-primary" onclick="analyze()">Analyze</button>
+    </div>
 
-<button onclick="analyze()" class="btn btn-success">
-Analyze Market
-</button>
+    <div id="result" class="mt-4"></div>
 
-<div id="result" style="margin-top:30px;font-size:20px"></div>
-<script src="script.js"></script>
+    <!-- JS FILE -->
+    <script src="script.js"></script>
+
 </body>
-</html>  
+</html>
