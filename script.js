@@ -1,5 +1,5 @@
 async function analyze(){
-let pair = document.getElementBuId("pair").value;
+let pair = document.getElementById("pair").value;
 document.getElementById("result").innerHTML = "Analyzing market...";
 let bullish = Math.floor(Math.random()*40)+50;
 let bearish = 100-bullish;
