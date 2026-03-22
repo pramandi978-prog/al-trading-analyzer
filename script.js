@@ -1,125 +1,126 @@
-<!-- index.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Trading Analyzer</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="container text-center mt-5">
-    <h1>AI Forex & Crypto Analyzer</h1>
+// ===== CONFIG =====
+const proxy = "https://api.allorigins.win/raw?url=";
 
-    <input type="text" id="search" placeholder="Search pair..." class="form-control w-25 mx-auto mt-3">
-
-    <select id="pair" class="form-select w-25 mx-auto mt-3"></select>
-
-    <button class="btn btn-primary mt-3" onclick="analyze()">Analyze</button>
-
-    <div id="loading" class="mt-3"></div>
-
-    <div id="result" class="mt-4"></div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
-
-
-/* style.css */
-body {
-  background: #0b0f19;
-  color: white;
-  font-family: Arial;
-}
-
-#result {
-  background: #111827;
-  padding: 20px;
-  border-radius: 10px;
-}
-
-
-// script.js
 const pairSelect = document.getElementById("pair");
 const searchInput = document.getElementById("search");
+const loading = document.getElementById("loading");
+const resultDiv = document.getElementById("result");
 
+let allPairs = [];
+
+// ===== LOAD PAIRS =====
 async function loadPairs() {
-  const res = await fetch("https://api.binance.com/api/v3/exchangeInfo");
-  const data = await res.json();
+  try {
+    const res = await fetch(proxy + encodeURIComponent("https://api.binance.com/api/v3/exchangeInfo"));
+    const data = await res.json();
 
-  const pairs = data.symbols
-    .filter(s => s.status === "TRADING" && s.symbol.endsWith("USDT"))
-    .map(s => s.symbol);
+    allPairs = data.symbols
+      .filter(s => s.status === "TRADING" && s.symbol.endsWith("USDT"))
+      .map(s => s.symbol);
 
+    renderPairs(allPairs);
+
+  } catch (err) {
+    console.error(err);
+    loading.innerText = "Error loading pairs ⚠️";
+  }
+}
+
+function renderPairs(pairs) {
   pairSelect.innerHTML = pairs.map(p => `<option>${p}</option>`).join("");
-
-  searchInput.addEventListener("input", () => {
-    const value = searchInput.value.toLowerCase();
-    pairSelect.innerHTML = pairs
-      .filter(p => p.toLowerCase().includes(value))
-      .map(p => `<option>${p}</option>`)
-      .join("");
-  });
 }
 
+// ===== SEARCH FILTER =====
+searchInput.addEventListener("input", () => {
+  const value = searchInput.value.toLowerCase();
+  const filtered = allPairs.filter(p => p.toLowerCase().includes(value));
+  renderPairs(filtered);
+});
+
+// ===== ANALYZE FUNCTION =====
 async function analyze() {
-  const pair = pairSelect.value;
-  document.getElementById("loading").innerText = "Analyzing...";
+  try {
+    const pair = pairSelect.value;
+    if (!pair) return;
 
-  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=5m&limit=100`);
-  const data = await res.json();
+    loading.innerText = "Analyzing...";
+    resultDiv.innerHTML = "";
 
-  const closes = data.map(c => parseFloat(c[4]));
+    const res = await fetch(
+      proxy + encodeURIComponent(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=5m&limit=100`)
+    );
 
-  const rsi = calculateRSI(closes, 14);
-  const ema9 = calculateEMA(closes, 9);
-  const ema21 = calculateEMA(closes, 21);
+    const data = await res.json();
 
-  let bullish = 0;
-  let bearish = 0;
+    if (!data || data.length === 0) {
+      loading.innerText = "No data found!";
+      return;
+    }
 
-  if (rsi < 30) bullish++;
-  if (rsi > 70) bearish++;
+    const closes = data.map(c => parseFloat(c[4]));
 
-  if (ema9 > ema21) bullish++;
-  else bearish++;
+    const rsi = calculateRSI(closes, 14);
+    const ema9 = calculateEMA(closes, 9);
+    const ema21 = calculateEMA(closes, 21);
+    const macd = calculateMACD(closes);
 
-  const trend = closes[closes.length - 1] > closes[closes.length - 10];
-  if (trend) bullish++;
-  else bearish++;
+    let bullish = 0;
+    let bearish = 0;
 
-  const total = bullish + bearish;
+    // RSI
+    if (rsi < 30) bullish++;
+    else if (rsi > 70) bearish++;
 
-  const bullishPerc = ((bullish / total) * 100).toFixed(2);
-  const bearishPerc = ((bearish / total) * 100).toFixed(2);
+    // EMA
+    if (ema9 > ema21) bullish++;
+    else bearish++;
 
-  const result = document.getElementById("result");
+    // Trend
+    const trendUp = closes[closes.length - 1] > closes[closes.length - 10];
+    if (trendUp) bullish++;
+    else bearish++;
 
-  result.innerHTML = `
-    <h4>${pair}</h4>
-    <p>RSI: ${rsi.toFixed(2)}</p>
-    <p>EMA 9: ${ema9.toFixed(2)}</p>
-    <p>EMA 21: ${ema21.toFixed(2)}</p>
-    <p>Bullish: ${bullishPerc}%</p>
-    <p>Bearish: ${bearishPerc}%</p>
-    <h3>${bullish > bearish ? "UP TREND 📈" : "DOWN TREND 📉"}</h3>
-  `;
+    // MACD
+    if (macd > 0) bullish++;
+    else bearish++;
 
-  document.getElementById("loading").innerText = "";
+    const total = bullish + bearish;
+
+    const bullishPerc = ((bullish / total) * 100).toFixed(2);
+    const bearishPerc = ((bearish / total) * 100).toFixed(2);
+
+    resultDiv.innerHTML = `
+      <h4>${pair}</h4>
+      <p>RSI: ${rsi.toFixed(2)}</p>
+      <p>EMA 9: ${ema9.toFixed(2)}</p>
+      <p>EMA 21: ${ema21.toFixed(2)}</p>
+      <p>MACD: ${macd.toFixed(4)}</p>
+      <p style="color:lightgreen;">Bullish: ${bullishPerc}%</p>
+      <p style="color:red;">Bearish: ${bearishPerc}%</p>
+      <h3>${bullish > bearish ? "UP TREND 📈" : "DOWN TREND 📉"}</h3>
+    `;
+
+    loading.innerText = "";
+
+  } catch (err) {
+    console.error(err);
+    loading.innerText = "Error loading data ⚠️";
+  }
 }
 
+// ===== EMA =====
 function calculateEMA(data, period) {
   const k = 2 / (period + 1);
   let ema = data[0];
+
   for (let i = 1; i < data.length; i++) {
     ema = data[i] * k + ema * (1 - k);
   }
+
   return ema;
 }
 
+// ===== RSI =====
 function calculateRSI(data, period) {
   let gains = 0;
   let losses = 0;
@@ -135,6 +136,7 @@ function calculateRSI(data, period) {
 
   for (let i = period + 1; i < data.length; i++) {
     const diff = data[i] - data[i - 1];
+
     if (diff >= 0) {
       avgGain = (avgGain * (period - 1) + diff) / period;
       avgLoss = (avgLoss * (period - 1)) / period;
@@ -148,9 +150,17 @@ function calculateRSI(data, period) {
   return 100 - (100 / (1 + rs));
 }
 
-loadPairs();
+// ===== MACD =====
+function calculateMACD(data) {
+  const ema12 = calculateEMA(data, 12);
+  const ema26 = calculateEMA(data, 26);
+  return ema12 - ema26;
+}
 
-// Auto refresh every 15 sec
+// ===== AUTO REFRESH =====
 setInterval(() => {
   if (pairSelect.value) analyze();
 }, 15000);
+
+// ===== INIT =====
+loadPairs();
