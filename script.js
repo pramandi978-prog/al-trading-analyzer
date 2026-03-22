@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const proxy = "https://corsproxy.io/?";
+const proxy = "https://api.codetabs.com/v1/proxy?quest=";
 
 const pairSelect = document.getElementById("pair");
 const searchInput = document.getElementById("search");
@@ -15,6 +15,12 @@ async function loadPairs() {
 
     const res = await fetch(proxy + "https://api.binance.com/api/v3/exchangeInfo");
     const data = await res.json();
+
+    // Kontroll shtesë (shumë i rëndësishëm)
+    if (!data.symbols) {
+      loading.innerText = "API blocked ⚠️";
+      return;
+    }
 
     allPairs = data.symbols
       .filter(s => s.status === "TRADING" && s.symbol.endsWith("USDT"))
@@ -55,8 +61,8 @@ async function analyze() {
 
     const data = await res.json();
 
-    if (!data || data.length === 0) {
-      loading.innerText = "No data!";
+    if (!Array.isArray(data)) {
+      loading.innerText = "API error ⚠️";
       return;
     }
 
@@ -65,7 +71,6 @@ async function analyze() {
     const rsi = calculateRSI(closes, 14);
     const ema9 = calculateEMA(closes, 9);
     const ema21 = calculateEMA(closes, 21);
-    const macd = calculateMACD(closes);
 
     let bullish = 0;
     let bearish = 0;
@@ -83,23 +88,15 @@ async function analyze() {
     if (trendUp) bullish++;
     else bearish++;
 
-    // MACD
-    if (macd > 0) bullish++;
-    else bearish++;
-
     const total = bullish + bearish;
-
-    const bullishPerc = ((bullish / total) * 100).toFixed(2);
-    const bearishPerc = ((bearish / total) * 100).toFixed(2);
 
     resultDiv.innerHTML = `
       <h4>${pair}</h4>
       <p>RSI: ${rsi.toFixed(2)}</p>
       <p>EMA 9: ${ema9.toFixed(2)}</p>
       <p>EMA 21: ${ema21.toFixed(2)}</p>
-      <p>MACD: ${macd.toFixed(4)}</p>
-      <p style="color:lightgreen;">Bullish: ${bullishPerc}%</p>
-      <p style="color:red;">Bearish: ${bearishPerc}%</p>
+      <p style="color:lightgreen;">Bullish: ${((bullish/total)*100).toFixed(2)}%</p>
+      <p style="color:red;">Bearish: ${((bearish/total)*100).toFixed(2)}%</p>
       <h3>${bullish > bearish ? "UP TREND 📈" : "DOWN TREND 📉"}</h3>
     `;
 
@@ -107,7 +104,7 @@ async function analyze() {
 
   } catch (err) {
     console.error(err);
-    loading.innerText = "Error loading data ⚠️";
+    loading.innerText = "Error analyzing ⚠️";
   }
 }
 
@@ -152,18 +149,6 @@ function calculateRSI(data, period) {
   const rs = avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
 }
-
-// ===== MACD =====
-function calculateMACD(data) {
-  const ema12 = calculateEMA(data, 12);
-  const ema26 = calculateEMA(data, 26);
-  return ema12 - ema26;
-}
-
-// ===== AUTO REFRESH =====
-setInterval(() => {
-  if (pairSelect.value) analyze();
-}, 15000);
 
 // ===== INIT =====
 loadPairs();
